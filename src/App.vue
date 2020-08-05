@@ -1,28 +1,53 @@
 <template>
-  <div id="app">
-    <img alt="Vue logo" src="./assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <div id="app" >
+    <header class="p-4 bg-green-400">
+      <h1 class="text-6xl">
+        <span role="img">🎏 🕐</span> Flags & Times
+      </h1>
+    </header>
+
+    <main>
+      <h2>Seleccionar Paises</h2>
+      <input v-model="state.filter" aria-label="Filtrar Paises" placeholder="Filtrar Paises">
+      <ul>
+        <li v-for="c in filteredCountries" :key="c.id" class="text-3xl">
+          <input type="checkbox" :id="c.id">
+          <label :for="c.id">{{ c.name }} {{ c.timezones }}</label>
+        </li>
+      </ul>
+    </main>
   </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+import { reactive, computed } from 'vue'
+import ct from 'countries-and-timezones'
 
 export default {
   name: 'App',
-  components: {
-    HelloWorld
+
+  setup () {
+    const state = reactive({
+      countries: [],
+      filter: ''
+    })
+
+    state.countries = Object.values(ct.getAllCountries())
+
+    const filteredCountries = computed(() => {
+      if (!state.filter) {
+        return state.countries
+      }
+
+      return state.countries
+        .filter(c => {
+          console.log(c.name.toLowerCase(), state.filter.toLowerCase(),
+            c.name.toLowerCase().includes(state.filter.toLowerCase()))
+          return c.name.toLowerCase().includes(state.filter.toLowerCase())
+        })
+    })
+
+    return { state, filteredCountries }
   }
 }
 </script>
-
-<style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
-</style>
