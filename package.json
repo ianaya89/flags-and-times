@@ -10,6 +10,8 @@
   "dependencies": {
     "core-js": "^3.6.5",
     "countries-and-timezones": "^2.2.0",
+    "date-fns": "^2.15.0",
+    "date-fns-tz": "^1.0.10",
     "vue": "^3.0.0-beta.1"
   },
   "devDependencies": {
