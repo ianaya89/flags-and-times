@@ -7,91 +7,79 @@
     </header>
 
     <main class="flex">
-      <section class="flex-1 p-5">
-        <input v-model="state.filter" aria-label="Filtrar Paises" placeholder="Filtrar Paises" class="bg-white focus:outline-none focus:shadow-outline border border-gray-300 rounded-lg py-2 px-4 block appearance-none leading-normal">
-        <ul>
-          <li v-for="c in filteredCountries" :key="c.id" class="text-3xl">
-            <label :for="c.id">
-              <input v-model="c.selected" :value="c.selected" type="checkbox" :id="c.id">
-              {{ c.name }}
-            </label>
-          </li>
-        </ul>
-      </section>
+      <CountryList @change="convertTimes" />
 
       <section class="flex-1 p-5">
-        <ul>
-          <li v-for="c in state.convertedCountries" :key="c.name" class="text-3xl text-green-400">
-            {{ c.name }}: {{ c.dates }}
-          </li>
-        </ul>
-        <label for="message">
-        <textarea id="message" disabled :value="state.message">
-        </textarea>
+        <label for="selectedDate">
+          <input id="selectedDate" type="datetime-local" v-model="state.selectedDate" placeholder="Seleccionar Fecha">
         </label>
+        <div v-html="state.message" class="text-3xl">
+        </div>
       </section>
     </main>
   </div>
 </template>
 
 <script>
-import { reactive, computed, watch } from 'vue'
-import ct from 'countries-and-timezones'
+import { reactive, watch } from 'vue'
 import { utcToZonedTime } from 'date-fns-tz'
+import emojis from '@/emojis'
+
+import CountryList from '@/components/CountryList'
 
 export default {
   name: 'App',
 
+  components: { CountryList },
+
   setup () {
     const state = reactive({
-      countries: [],
       convertedCountries: [],
-      filter: '',
+      selectedDate: new Date(),
       message: ''
     })
 
-    state.countries = Object.values(ct.getAllCountries())
-      .map(c => ({ ...c, selected: false }))
+    let localCountries = []
 
-    const filteredCountries = computed(() => {
-      if (!state.filter) {
-        return state.countries
+    function convertTimes (countries) {
+      if (!countries.length) {
+        return
       }
 
-      return state.countries
-        .filter(c => c.name.toLowerCase().includes(state.filter.toLowerCase()))
-    })
+      localCountries = countries
+      let message = ''
+      const now = state.selectedDate
 
-    const selectedCountries = computed(() => {
-      return state.countries.filter(c => c.selected)
-    })
+      countries.forEach(c => {
+        const dates = Array.from(new Set(c.timezones.map(
+          tz => utcToZonedTime(now, tz).toLocaleString())))
+
+        let flags = emojis['flag-' + c.id.toLowerCase()].b
+          .split('-')
+          .map(code => `&#x${code};`)
+          .join('')
+
+        flags = `<span role="img">${flags}</span>`
+
+        message += `
+            ${c.name}:
+            ${flags}
+            ${dates.join('\n')}
+            <br><br>
+          `
+      })
+
+      state.message = message
+    }
 
     watch(
-      selectedCountries,
+      () => state.selectedDate,
       () => {
-        const convertedCountries = []
-        let message = ''
-        const now = new Date()
-
-        selectedCountries.value.forEach(c => {
-          const dates = Array.from(new Set(c.timezones.map(tz => utcToZonedTime(now, tz).toLocaleString())))
-
-          message += `
-            ${c.name}:
-            ${dates.join('\n')}
-          `
-          convertedCountries.push({
-            name: c.name,
-            dates
-          })
-        })
-
-        state.message = message
-        state.convertedCountries = convertedCountries
+        convertTimes(localCountries)
       }
     )
 
-    return { state, filteredCountries, selectedCountries }
+    return { state, convertTimes }
   }
 }
 </script>
